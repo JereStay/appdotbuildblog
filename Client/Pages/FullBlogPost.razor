@@ -1,0 +1,52 @@
+﻿@page "/blogposts/{id:guid}"
+@inject BlogPostService service
+@inject NavigationManager navigationManager
+@using Markdig
+@using Models
+
+@if (blogPost is null)
+{
+    <div>Loading...</div>
+}
+else
+{
+    <AuthorizeView Roles="admin">
+        <Authorized>
+            <a href="blogposts/@Id/edit">Edit</a>
+            <a href="javascript:;" @onclick="Delete">Delete</a>
+        </Authorized>
+    </AuthorizeView>
+    <div>
+        <h1>@blogPost.Title</h1>
+        <h2>@blogPost.Author</h2>
+        <div>@blogPost.PublishedDate</div>
+        <div>
+            @foreach (var tag in blogPost.Tags!.CleanTags())
+            {
+                <em>@tag, </em>
+            }
+        </div>
+        <div>
+            @((MarkupString)Markdown.ToHtml(blogPost.BlogPostMarkdown!))
+        </div>
+    </div>
+}
+
+@code
+{
+    private BlogPost? blogPost;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        blogPost = await service.GetBlogPost(Id);
+    }
+
+    private void Delete()
+    {
+        service.Delete(blogPost!.Id!.Value, blogPost!.Author!);
+        navigationManager.NavigateTo("blogposts");
+    }
+}
