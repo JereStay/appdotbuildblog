@@ -1,0 +1,49 @@
+﻿@page "/blogposts"
+@inject BlogPostSummaryService service
+@inject NavigationManager navigationManager
+@using Markdig
+
+<PageTitle>Blog posts</PageTitle>
+
+<h1>Blog posts</h1>
+
+@if (service.Summaries is null)
+{
+    <div>Loading...</div>
+}
+else
+{
+    <AuthorizeView Roles="admin">
+        <Authorized>
+            <a href="blogposts/new/edit">Create</a>
+        </Authorized>
+    </AuthorizeView>
+
+    foreach (var blogPostSummary in service.Summaries.OrderByDescending(bp => bp.PublishedDate))
+    {
+    <div @onclick="() => Navigate(blogPostSummary.Id!.Value)">
+        <h2>@blogPostSummary.Title</h2>
+        <div>
+     	    @foreach(var tag in blogPostSummary.Tags!.CleanTags())
+     	    {
+     		    <span>@tag, </span>
+            }
+        </div>
+        <div>
+ 	        @((MarkupString)Markdown.ToHtml(blogPostSummary.BlogPostMarkdown!))
+        </div>
+        <hr />
+    </div>
+
+    }
+}
+
+@code
+{
+    void Navigate(Guid id) => navigationManager.NavigateTo($"/blogposts/{id}");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await service.LoadBlogPostSummaries();
+    }
+}
